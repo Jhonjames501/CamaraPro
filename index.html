@@ -9,8 +9,47 @@
 </head>
 <body>
 
-    <div class="app-container">
-        <!-- Barra superior con widgets de Fecha, Hora, GPS y Clima -->
+    <!-- PANTALLA DE INICIO (SPLASH SCREEN) -->
+    <div id="splash-screen" class="splash-container">
+        <div class="splash-bg"></div>
+        
+        <div class="splash-top-bar">
+            <span id="splash-time">23:11</span> | <span id="splash-loc">Lima, Perú</span> | <span id="splash-date">sáb, 10 oct 2026</span>
+        </div>
+
+        <div class="splash-center">
+            <div class="splash-logo-container">
+                <img src="https://i.imgur.com/83pZ2eH.png" alt="Cámara Pro Logo" class="splash-logo" onerror="this.style.display='none'">
+                <div class="logo-glow-fallback">
+                    <i class="fa-solid fa-location-dot pin-top"></i>
+                    <div class="diaphragm-circle">
+                        <i class="fa-solid fa-clock clock-hands"></i>
+                    </div>
+                </div>
+            </div>
+            <h1 class="splash-title">CAMARA PRO</h1>
+            
+            <div class="loader-dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <p class="splash-status-main">Cargando camara...</p>
+            <p class="splash-status-sub">Iniciando GPS...</p>
+        </div>
+
+        <div class="splash-bottom">
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progress-fill"></div>
+            </div>
+            <div class="splash-footer">
+                Preparando cámara • GPS activo • Versión 2.4.1
+            </div>
+        </div>
+    </div>
+
+    <!-- APLICACIÓN PRINCIPAL DE CÁMARA -->
+    <div class="app-container" id="main-app" style="opacity: 0; pointer-events: none; transition: opacity 0.8s ease;">
         <header class="camera-header">
             <div class="widget-row">
                 <div class="widget-pill time-pill" id="live-time">14:32</div>
@@ -29,12 +68,10 @@
             </div>
         </header>
 
-        <!-- Visor de la Cámara -->
         <main class="camera-viewfinder">
             <video id="camera-feed" autoplay playsinline muted></video>
             <canvas id="photo-canvas" style="display:none;"></canvas>
 
-            <!-- Controles laterales internos -->
             <div class="side-controls">
                 <button class="icon-btn" id="btn-settings" title="Ajustes Pro">
                     <i class="fa-solid fa-sliders"></i>
@@ -54,7 +91,6 @@
             </div>
         </main>
 
-        <!-- Navegación de Modos de Captura -->
         <nav class="modes-nav">
             <button class="mode-btn active" data-mode="PHOTO">FOTO</button>
             <button class="mode-btn" data-mode="VIDEO">VÍDEO</button>
@@ -62,7 +98,6 @@
             <button class="mode-btn" data-mode="PANO">PANO</button>
         </nav>
 
-        <!-- Controles Inferiores -->
         <footer class="camera-footer">
             <div class="footer-action" id="open-gallery">
                 <div class="thumbnail-preview" id="thumb-container">
@@ -86,7 +121,7 @@
         </footer>
     </div>
 
-    <!-- Modal de Ajustes Pro -->
+    <!-- Modales Pro -->
     <div class="modal" id="settings-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -96,9 +131,8 @@
             <div class="settings-body">
                 <div class="setting-group">
                     <label>📝 Texto de Nota / Proyecto:</label>
-                    <input type="text" id="input-custom-text" placeholder="Ej: Obra Norte / Inspector Juan" value="Cámara Pro - Negocios">
+                    <input type="text" id="input-custom-text" value="Cámara Pro - Negocios">
                 </div>
-                
                 <div class="setting-group">
                     <label>📐 Formato de Coordenadas:</label>
                     <select id="select-coord-format">
@@ -106,7 +140,6 @@
                         <option value="dms">Grados/Minutos/Segundos</option>
                     </select>
                 </div>
-
                 <div class="setting-group">
                     <label>🔍 Lente de Cámara:</label>
                     <select id="select-lens">
@@ -115,7 +148,6 @@
                         <option value="user">Frontal (Selfie)</option>
                     </select>
                 </div>
-
                 <div class="setting-group">
                     <label>⚡ Calidad de Captura:</label>
                     <select id="select-quality">
@@ -124,18 +156,15 @@
                         <option value="0.60">Baja (Reporte Rápido / Liviano)</option>
                     </select>
                 </div>
-
                 <div class="setting-group">
                     <label>🖼️ Logotipo o Sello Personal (Opcional):</label>
                     <input type="file" id="input-logo" accept="image/*">
                 </div>
-
                 <button class="pro-btn save-settings-btn" id="save-settings"><i class="fa-solid fa-check"></i> Aplicar Ajustes</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Galería -->
     <div class="modal" id="gallery-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -148,7 +177,6 @@
         </div>
     </div>
 
-    <!-- Modal de Vista Detallada de Foto/Vídeo -->
     <div class="modal" id="preview-modal">
         <div class="modal-content preview-content">
             <button class="close-modal" id="close-preview">&times;</button>
