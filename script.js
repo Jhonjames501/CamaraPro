@@ -113,26 +113,34 @@ function initGPS() {
     }
 }
 
-// Iniciar Cámara
+// Iniciar Cámara adaptada para WebView de Android y APKs
 async function startCamera() {
     if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
     }
 
-    let videoConstraint = { facingMode: useFrontCamera ? 'user' : 'environment' };
-    if (proSettings.lens === 'wide' && !useFrontCamera) {
-        videoConstraint = { facingMode: { exact: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } };
-    }
+    const constraints = {
+        video: {
+            facingMode: useFrontCamera ? 'user' : 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+        },
+        audio: true
+    };
 
     try {
-        currentStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true });
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         videoElement.srcObject = currentStream;
+        videoElement.play();
     } catch (err) {
+        console.warn("Intentando método alternativo de cámara para APK:", err);
         try {
-            currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: useFrontCamera ? 'user' : 'environment' }, audio: true });
+            // Fallback genérico para WebView estricto
+            currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             videoElement.srcObject = currentStream;
+            videoElement.play();
         } catch (e) {
-            console.warn("Aviso de cámara:", e);
+            console.error("No se pudo acceder a la cámara en el contenedor:", e);
         }
     }
 }
@@ -157,6 +165,8 @@ function initSplashSequence() {
                 splashScreen.style.display = 'none';
                 mainApp.style.opacity = '1';
                 mainApp.style.pointerEvents = 'auto';
+                // Forzar inicio de cámara al mostrar la app principal
+                startCamera();
             }, 800);
         }
         progressFill.style.width = `${progress}%`;
@@ -264,7 +274,7 @@ captureBtn.addEventListener('click', () => {
     }
 });
 
-// Capturar Foto y Descargar a Galería del Dispositivo
+// Capturar Foto
 function capturePhoto() {
     const width = videoElement.videoWidth || 1280;
     const height = videoElement.videoHeight || 720;
