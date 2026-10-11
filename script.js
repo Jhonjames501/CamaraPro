@@ -23,7 +23,6 @@ const liveDate = document.getElementById('live-date');
 const locationText = document.getElementById('location-text');
 const liveCoords = document.getElementById('live-coords');
 
-// Referencias Splash Screen
 const splashScreen = document.getElementById('splash-screen');
 const mainApp = document.getElementById('main-app');
 const progressFill = document.getElementById('progress-fill');
@@ -113,50 +112,46 @@ function initGPS() {
     }
 }
 
-// Iniciar Cámara con compatibilidad absoluta para WebView APK
+// Función robusta de apertura de cámara para contenedores WebView de APK
 async function startCamera() {
-    if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-    }
-
-    const constraints = {
-        video: {
-            facingMode: useFrontCamera ? 'user' : 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-        },
-        audio: true
-    };
-
     try {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+
+        const constraints = {
+            video: {
+                facingMode: useFrontCamera ? 'user' : 'environment',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: true
+        };
+
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         videoElement.srcObject = currentStream;
         await videoElement.play();
     } catch (err) {
-        console.warn("Fallo el stream principal, intentando método de emergencia para APK...", err);
+        console.warn("Intentando acceso de emergencia a cámara...", err);
         try {
             currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             videoElement.srcObject = currentStream;
             await videoElement.play();
         } catch (e) {
-            console.error("Bloqueo de cámara en APK:", e);
-            alert("Por favor, asegúrate de dar permisos de cámara a la app en los ajustes de tu teléfono y toca la pantalla para iniciar.");
+            console.error("Error definitivo de cámara:", e);
         }
     }
 }
 
-// Permitir activar la cámara manualmente tocando el visor si el WebView la bloquea de inicio
+// Permitir iniciar la cámara tocando la pantalla directamente (vital para APKs de WebView)
 videoElement.addEventListener('click', () => {
-    if (!currentStream || videoElement.paused) {
-        startCamera();
-    }
+    startCamera();
 });
 
 // Secuencia Splash Screen de 4 segundos
 function initSplashSequence() {
     initGPS();
-    startCamera();
-
+    
     let progress = 0;
     const intervalTime = 40;
     const increment = 100 / (4000 / intervalTime);
@@ -452,7 +447,7 @@ function openPreview(media) {
 
 closePreviewBtn.addEventListener('click', () => previewModal.classList.remove('active'));
 
-// Arrancar secuencia al cargar
+// Iniciar secuencia al cargar
 window.addEventListener('load', () => {
     initSplashSequence();
 });
