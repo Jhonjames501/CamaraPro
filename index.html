@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cámara Pro - Sello GPS y Hora</title>
     <link rel="stylesheet" href="style.css">
-    <!-- FontAwesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -37,6 +36,10 @@
 
             <!-- Controles laterales internos -->
             <div class="side-controls">
+                <button class="icon-btn" id="btn-settings" title="Ajustes Pro">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>PRO</span>
+                </button>
                 <button class="icon-btn" id="btn-flash" title="Flash">
                     <i class="fa-solid fa-bolt-slash" id="flash-icon"></i>
                     <span>APAGADO</span>
@@ -59,7 +62,7 @@
             <button class="mode-btn" data-mode="PANO">PANO</button>
         </nav>
 
-        <!-- Controles Inferiores (Galería, Disparo, Mapa/Pro) -->
+        <!-- Controles Inferiores -->
         <footer class="camera-footer">
             <div class="footer-action" id="open-gallery">
                 <div class="thumbnail-preview" id="thumb-container">
@@ -83,6 +86,55 @@
         </footer>
     </div>
 
+    <!-- Modal de Ajustes Pro -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-gears"></i> Ajustes de Negocio y Sello</h2>
+                <button class="close-modal" id="close-settings">&times;</button>
+            </div>
+            <div class="settings-body">
+                <div class="setting-group">
+                    <label>📝 Texto de Nota / Proyecto:</label>
+                    <input type="text" id="input-custom-text" placeholder="Ej: Obra Norte / Inspector Juan" value="Cámara Pro - Negocios">
+                </div>
+                
+                <div class="setting-group">
+                    <label>📐 Formato de Coordenadas:</label>
+                    <select id="select-coord-format">
+                        <option value="decimal">Decimal (-12.0464°, -77.0428°)</option>
+                        <option value="dms">Grados/Minutos/Segundos</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label>🔍 Lente de Cámara:</label>
+                    <select id="select-lens">
+                        <option value="environment">Principal Trasera</option>
+                        <option value="wide">Ultra Gran Angular / Zoom</option>
+                        <option value="user">Frontal (Selfie)</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label>⚡ Calidad de Captura:</label>
+                    <select id="select-quality">
+                        <option value="0.95">Alta (Máxima Nitidez)</option>
+                        <option value="0.80" selected>Media (Equilibrada)</option>
+                        <option value="0.60">Baja (Reporte Rápido / Liviano)</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label>🖼️ Logotipo o Sello Personal (Opcional):</label>
+                    <input type="file" id="input-logo" accept="image/*">
+                </div>
+
+                <button class="pro-btn save-settings-btn" id="save-settings"><i class="fa-solid fa-check"></i> Aplicar Ajustes</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Galería -->
     <div class="modal" id="gallery-modal">
         <div class="modal-content">
@@ -96,14 +148,14 @@
         </div>
     </div>
 
-    <!-- Modal de Vista Detallada de Foto -->
+    <!-- Modal de Vista Detallada de Foto/Vídeo -->
     <div class="modal" id="preview-modal">
         <div class="modal-content preview-content">
             <button class="close-modal" id="close-preview">&times;</button>
             <img id="preview-img" src="" alt="Foto capturada">
             <div class="preview-meta" id="preview-meta-text"></div>
             <div class="preview-actions">
-                <a id="download-btn" class="pro-btn" download="camara-pro.jpg"><i class="fa-solid fa-download"></i> Descargar Imagen</a>
+                <a id="download-btn" class="pro-btn" download="camara-pro.jpg"><i class="fa-solid fa-download"></i> Descargar Archivo</a>
             </div>
         </div>
     </div>
