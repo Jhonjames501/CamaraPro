@@ -69,7 +69,16 @@
         </header>
 
         <main class="camera-viewfinder">
-            <video id="camera-feed" autoplay playsinline muted></video>
+            <!-- Input de cámara nativa 100% compatible con cualquier APK -->
+            <input type="file" id="native-camera-input" accept="image/*" capture="environment" style="display:none;">
+            
+            <!-- Vista previa interactiva para disparar -->
+            <div class="native-viewfinder-screen" id="trigger-native-cam">
+                <div class="camera-placeholder-box">
+                    <i class="fa-solid fa-camera-retro"></i>
+                    <span>Toca para abrir Cámara Pro</span>
+                </div>
+            </div>
             <canvas id="photo-canvas" style="display:none;"></canvas>
 
             <div class="side-controls">
