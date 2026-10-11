@@ -1,0 +1,376 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    user-select: none;
+}
+
+body {
+    background-color: #0c0c0e;
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 430px;
+    height: 100vh;
+    max-height: 932px;
+    background-color: #000000;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+
+/* Cabecera con Widgets */
+.camera-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 14px 16px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: none;
+}
+
+.widget-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.secondary-row {
+    justify-content: space-between;
+    font-size: 12px;
+    color: #d1d1d6;
+}
+
+.coordinates-row {
+    font-size: 11px;
+    color: #3b82f6;
+    font-family: monospace;
+}
+
+.widget-pill {
+    background: rgba(28, 28, 30, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.time-pill {
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+}
+
+.location-pill {
+    color: #ffffff;
+    max-width: 240px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.location-pill i {
+    color: #3b82f6;
+}
+
+.widget-text {
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* Visor de Cámara */
+.camera-viewfinder {
+    flex: 1;
+    position: relative;
+    background: #111;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#camera-feed {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Controles Laterales */
+.side-controls {
+    position: absolute;
+    right: 16px;
+    top: 130px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    z-index: 5;
+}
+
+.icon-btn {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: transform 0.1s ease, background 0.2s;
+}
+
+.icon-btn:active {
+    transform: scale(0.92);
+}
+
+.icon-btn span {
+    font-size: 8px;
+    margin-top: 2px;
+    font-weight: 700;
+}
+
+.badge-txt {
+    font-size: 10px !important;
+}
+
+/* Navegación de Modos */
+.modes-nav {
+    height: 45px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 10;
+}
+
+.mode-btn {
+    background: none;
+    border: none;
+    color: #8e8e93;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: color 0.2s;
+}
+
+.mode-btn.active {
+    color: #ff9f0a;
+}
+
+/* Footer de Cámara */
+.camera-footer {
+    height: 110px;
+    background: #000000;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 10;
+}
+
+.footer-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: #8e8e93;
+    font-size: 11px;
+}
+
+.thumbnail-preview, .map-icon-preview {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: #2c2c2e;
+    border: 2px solid rgba(255,255,255,0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    color: #fff;
+    font-size: 18px;
+}
+
+.thumbnail-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Botón de Disparo */
+.shutter-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.shutter-button {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: transparent;
+    border: 4px solid #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+.shutter-button:active {
+    transform: scale(0.92);
+}
+
+.shutter-inner {
+    width: 62px;
+    height: 62px;
+    background: #ffffff;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.shutter-button:active .shutter-inner {
+    background: #d1d1d6;
+}
+
+/* Modales */
+.modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    backdrop-filter: blur(20px);
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.close-modal {
+    background: #2c2c2e;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-body {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.empty-msg {
+    grid-column: span 3;
+    text-align: center;
+    color: #8e8e93;
+    margin-top: 40px;
+}
+
+.gallery-item {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    background: #1c1c1e;
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Vista previa de foto individual */
+.preview-content {
+    justify-content: center;
+    align-items: center;
+    padding: 30px 16px;
+}
+
+.preview-content img {
+    max-width: 100%;
+    max-height: 60vh;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    margin-bottom: 16px;
+    object-fit: contain;
+}
+
+.preview-meta {
+    font-size: 13px;
+    color: #a1a1a6;
+    text-align: center;
+    margin-bottom: 20px;
+    font-family: monospace;
+}
+
+.pro-btn {
+    background: #3b82f6;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 24px;
+    text-decoration: none;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
