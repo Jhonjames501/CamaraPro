@@ -28,7 +28,6 @@ body {
     box-shadow: 0 10px 30px rgba(0,0,0,0.8);
 }
 
-/* Cabecera con Widgets */
 .camera-header {
     position: absolute;
     top: 0;
@@ -97,7 +96,6 @@ body {
     text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
-/* Visor de Cámara */
 .camera-viewfinder {
     flex: 1;
     position: relative;
@@ -114,14 +112,13 @@ body {
     object-fit: cover;
 }
 
-/* Controles Laterales */
 .side-controls {
     position: absolute;
     right: 16px;
     top: 130px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
     z-index: 5;
 }
 
@@ -129,14 +126,14 @@ body {
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: white;
-    width: 46px;
-    height: 46px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    font-size: 14px;
+    font-size: 13px;
     cursor: pointer;
     backdrop-filter: blur(8px);
     transition: transform 0.1s ease, background 0.2s;
@@ -147,7 +144,7 @@ body {
 }
 
 .icon-btn span {
-    font-size: 8px;
+    font-size: 7px;
     margin-top: 2px;
     font-weight: 700;
 }
@@ -156,7 +153,47 @@ body {
     font-size: 10px !important;
 }
 
-/* Navegación de Modos */
+.settings-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 10px;
+}
+
+.setting-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.setting-group label {
+    font-size: 13px;
+    color: #a1a1a6;
+    font-weight: 500;
+}
+
+.setting-group input[type="text"], .setting-group select {
+    background: #1c1c1e;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    outline: none;
+}
+
+.setting-group input[type="file"] {
+    font-size: 12px;
+    color: #8e8e93;
+}
+
+.save-settings-btn {
+    margin-top: 10px;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+}
+
 .modes-nav {
     height: 45px;
     display: flex;
@@ -182,7 +219,6 @@ body {
     color: #ff9f0a;
 }
 
-/* Footer de Cámara */
 .camera-footer {
     height: 110px;
     background: #000000;
@@ -223,7 +259,6 @@ body {
     object-fit: cover;
 }
 
-/* Botón de Disparo */
 .shutter-container {
     display: flex;
     justify-content: center;
@@ -255,18 +290,13 @@ body {
     transition: background 0.2s;
 }
 
-.shutter-button:active .shutter-inner {
-    background: #d1d1d6;
-}
-
-/* Modales */
 .modal {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.9);
+    background: rgba(0,0,0,0.92);
     z-index: 100;
     display: none;
     flex-direction: column;
@@ -293,7 +323,7 @@ body {
 }
 
 .modal-header h2 {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
 }
 
@@ -338,7 +368,6 @@ body {
     object-fit: cover;
 }
 
-/* Vista previa de foto individual */
 .preview-content {
     justify-content: center;
     align-items: center;
@@ -371,6 +400,7 @@ body {
     font-weight: 600;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
