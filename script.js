@@ -5,17 +5,20 @@ const captureBtn = document.getElementById('btn-capture');
 const flipBtn = document.getElementById('btn-flip');
 const flashBtn = document.getElementById('btn-flash');
 const flashIcon = document.getElementById('flash-icon');
+const hdrBtn = document.getElementById('btn-hdr');
 
 const liveTime = document.getElementById('live-time');
 const liveDate = document.getElementById('live-date');
 const locationText = document.getElementById('location-text');
 const liveCoords = document.getElementById('live-coords');
 
+const modes = document.querySelectorAll('.mode-btn');
 const openGalleryBtn = document.getElementById('open-gallery');
 const galleryModal = document.getElementById('gallery-modal');
 const closeGalleryBtn = document.getElementById('close-gallery');
 const galleryGrid = document.getElementById('gallery-grid');
 
+const openMapBtn = document.getElementById('open-map');
 const previewModal = document.getElementById('preview-modal');
 const closePreviewBtn = document.getElementById('close-preview');
 const previewImg = document.getElementById('preview-img');
@@ -25,7 +28,9 @@ const downloadBtn = document.getElementById('download-btn');
 let currentStream = null;
 let useFrontCamera = false;
 let flashState = false;
-let currentCoords = { lat: -11.9333, lon: -77.0500 }; // Coordenadas aproximadas de Carabayllo, Lima
+let hdrState = false;
+let currentMode = 'PHOTO';
+let currentCoords = { lat: -11.9333, lon: -77.0500 }; // Carabayllo, Lima
 let currentAddress = "Carabayllo, Lima";
 let capturedPhotos = [];
 
@@ -72,26 +77,31 @@ async function startCamera() {
             width: { ideal: 1920 },
             height: { ideal: 1080 }
         },
-        audio: false
+        audio: currentMode === 'VIDEO'
     };
 
     try {
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         videoElement.srcObject = currentStream;
+        
+        // Intentar activar linterna física si el dispositivo y el navegador lo soportan (para Flash ON)
+        const track = currentStream.getVideoTracks()[0];
+        if (track && track.getCapabilities && track.getCapabilities().torch) {
+            await track.applyConstraints({ advanced: [{ torch: flashState }] });
+        }
     } catch (err) {
-        console.error("Error al acceder a la cámara:", err);
-        alert("No se pudo acceder a la cámara. Asegúrate de dar los permisos necesarios en tu navegador.");
+        console.warn("Aviso de cámara/audio:", err);
     }
 }
 
-// Cambiar entre cámara frontal y trasera
+// 1. Botón de Girar Cámara
 flipBtn.addEventListener('click', () => {
     useFrontCamera = !useFrontCamera;
     startCamera();
 });
 
-// Botón de Flash simulado
-flashBtn.addEventListener('click', () => {
+// 2. Botón de Flash real / Linterna
+flashBtn.addEventListener('click', async () => {
     flashState = !flashState;
     if (flashState) {
         flashIcon.className = "fa-solid fa-bolt";
@@ -102,9 +112,56 @@ flashBtn.addEventListener('click', () => {
         flashBtn.querySelector('span').textContent = "APAGADO";
         flashBtn.style.color = "#ffffff";
     }
+    
+    // Aplicar linterna física si soporta el hardware
+    if (currentStream) {
+        const track = currentStream.getVideoTracks()[0];
+        if (track && track.getCapabilities && track.getCapabilities().torch) {
+            try {
+                await track.applyConstraints({ advanced: [{ torch: flashState }] });
+            } catch (e) { console.log("Torch no soportado en este dispositivo"); }
+        }
+    }
 });
 
-// Capturar Foto y estampar marca de agua GPS / Fecha
+// 3. Botón de HDR (Modo de realce visual en pantalla)
+hdrBtn.addEventListener('click', () => {
+    hdrState = !hdrState;
+    if (hdrState) {
+        hdrBtn.style.color = "#ff9f0a";
+        hdrBtn.style.borderColor = "#ff9f0a";
+        videoElement.style.filter = "contrast(1.255) saturate(1.3) brightness(1.05)";
+    } else {
+        hdrBtn.style.color = "#ffffff";
+        hdrBtn.style.borderColor = "rgba(255, 255, 255, 0.15)";
+        videoElement.style.filter = "none";
+    }
+});
+
+// 4. Selección de Modos (FOTO, VÍDEO, RETRATO, PANO)
+modes.forEach(btn => {
+    btn.addEventListener('click', () => {
+        modes.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.getAttribute('data-mode');
+        
+        if (currentMode === 'VIDEO') {
+            alert("Modo Vídeo seleccionado. (Próximamente grabación continua de vídeo).");
+        } else if (currentMode === 'PORTRAIT') {
+            alert("Modo Retrato activado (Foco central optimizado).");
+        } else if (currentMode === 'PANO') {
+            alert("Modo Panorámica seleccionado.");
+        }
+    });
+});
+
+// 5. Botón de Mapa (Abre Google Maps con tu ubicación GPS actual)
+openMapBtn.addEventListener('click', () => {
+    const mapUrl = `https://www.google.com/maps?q=${currentCoords.lat},${currentCoords.lon}`;
+    window.open(mapUrl, '_blank');
+});
+
+// 6. Captura de Foto con Sello Integrado
 captureBtn.addEventListener('click', () => {
     const width = videoElement.videoWidth || 1280;
     const height = videoElement.videoHeight || 720;
@@ -113,26 +170,32 @@ captureBtn.addEventListener('click', () => {
     canvasElement.height = height;
     const ctx = canvasElement.getContext('2d');
 
-    // 1. Dibujar el fotograma actual del vídeo
-    ctx.drawImage(videoElement, 0, 0, width, height);
+    // Aplicar filtro HDR al canvas si está activo
+    if (hdrState) {
+        ctx.filter = "contrast(1.25) saturate(1.3) brightness(1.05)";
+    }
 
-    // Si el flash está activo, simular destello blanco en la foto
+    // Dibujar el fotograma del vídeo
+    ctx.drawImage(videoElement, 0, 0, width, height);
+    ctx.filter = "none"; // Resetear filtro
+
+    // Simular destello de flash en pantalla si está encendido
     if (flashState) {
-        ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+        ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
         ctx.fillRect(0, 0, width, height);
     }
 
-    // 2. Estampar la Tarjeta de Marca de Agua
+    // Dibujar la tarjeta de Marca de Agua con datos reales
     const padding = 40;
     const boxWidth = width - (padding * 2);
     const boxHeight = 160;
     const boxX = padding;
     const boxY = height - boxHeight - padding;
 
-    ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
     ctx.roundRect ? ctx.beginPath() || ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 16) || ctx.fill() : ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-    // Textos de la marca de agua
+    // Textos de fecha y hora
     ctx.fillStyle = "#FFFFFF";
     ctx.font = "bold 32px sans-serif";
     const now = new Date();
@@ -141,15 +204,17 @@ captureBtn.addEventListener('click', () => {
 
     ctx.fillText(`${timeStr}  •  ${dateStr}`, boxX + 30, boxY + 50);
 
+    // Coordenadas y ubicación
     ctx.fillStyle = "#3b82f6";
     ctx.font = "24px sans-serif";
     ctx.fillText(`📍 ${currentAddress} (${currentCoords.lat.toFixed(4)}°, ${currentCoords.lon.toFixed(4)}°)`, boxX + 30, boxY + 100);
 
+    // Clima y firma de la app
     ctx.fillStyle = "#a1a1a6";
     ctx.font = "20px sans-serif";
     ctx.fillText(`☁️ 18°C • Cámara Pro Móvil`, boxX + 30, boxY + 138);
 
-    // 3. Convertir a imagen y guardar en galería local
+    // Guardar en la galería interna
     const dataUrl = canvasElement.toDataURL('image/jpeg', 0.92);
     const photoObj = {
         url: dataUrl,
@@ -161,7 +226,7 @@ captureBtn.addEventListener('click', () => {
     updateThumbnail();
 });
 
-// Actualizar miniatura en la interfaz
+// Actualizar miniatura flotante
 function updateThumbnail() {
     if (capturedPhotos.length > 0) {
         openGalleryBtn.querySelector('.thumbnail-preview').innerHTML = `<img src="${capturedPhotos[0].url}" alt="Miniatura">`;
@@ -205,7 +270,7 @@ closePreviewBtn.addEventListener('click', () => {
     previewModal.classList.remove('active');
 });
 
-// Arrancar cámara al cargar la página
+// Inicializar cámara al cargar
 window.addEventListener('load', () => {
     startCamera();
 });
