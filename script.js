@@ -30,9 +30,15 @@ let useFrontCamera = false;
 let flashState = false;
 let hdrState = false;
 let currentMode = 'PHOTO';
+
+// Variables para grabación de vídeo
+let mediaRecorder = null;
+let recordedChunks = [];
+let isRecording = false;
+
 let currentCoords = { lat: -11.9333, lon: -77.0500 }; // Carabayllo, Lima
 let currentAddress = "Carabayllo, Lima";
-let capturedPhotos = [];
+let capturedMedia = []; // Almacena fotos y vídeos
 
 // Reloj en tiempo real
 function updateClock() {
@@ -77,18 +83,12 @@ async function startCamera() {
             width: { ideal: 1920 },
             height: { ideal: 1080 }
         },
-        audio: currentMode === 'VIDEO'
+        audio: true // Necesario para el modo vídeo
     };
 
     try {
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         videoElement.srcObject = currentStream;
-        
-        // Intentar activar linterna física si el dispositivo y el navegador lo soportan (para Flash ON)
-        const track = currentStream.getVideoTracks()[0];
-        if (track && track.getCapabilities && track.getCapabilities().torch) {
-            await track.applyConstraints({ advanced: [{ torch: flashState }] });
-        }
     } catch (err) {
         console.warn("Aviso de cámara/audio:", err);
     }
@@ -100,7 +100,7 @@ flipBtn.addEventListener('click', () => {
     startCamera();
 });
 
-// 2. Botón de Flash real / Linterna
+// 2. Botón de Flash real
 flashBtn.addEventListener('click', async () => {
     flashState = !flashState;
     if (flashState) {
@@ -113,24 +113,23 @@ flashBtn.addEventListener('click', async () => {
         flashBtn.style.color = "#ffffff";
     }
     
-    // Aplicar linterna física si soporta el hardware
     if (currentStream) {
         const track = currentStream.getVideoTracks()[0];
         if (track && track.getCapabilities && track.getCapabilities().torch) {
             try {
                 await track.applyConstraints({ advanced: [{ torch: flashState }] });
-            } catch (e) { console.log("Torch no soportado en este dispositivo"); }
+            } catch (e) { console.log("Torch no soportado"); }
         }
     }
 });
 
-// 3. Botón de HDR (Modo de realce visual en pantalla)
+// 3. Botón de HDR
 hdrBtn.addEventListener('click', () => {
     hdrState = !hdrState;
     if (hdrState) {
         hdrBtn.style.color = "#ff9f0a";
         hdrBtn.style.borderColor = "#ff9f0a";
-        videoElement.style.filter = "contrast(1.255) saturate(1.3) brightness(1.05)";
+        videoElement.style.filter = "contrast(1.25) saturate(1.3) brightness(1.05)";
     } else {
         hdrBtn.style.color = "#ffffff";
         hdrBtn.style.borderColor = "rgba(255, 255, 255, 0.15)";
@@ -138,31 +137,43 @@ hdrBtn.addEventListener('click', () => {
     }
 });
 
-// 4. Selección de Modos (FOTO, VÍDEO, RETRATO, PANO)
+// 4. Selección de Modos de Captura con lógica real
 modes.forEach(btn => {
     btn.addEventListener('click', () => {
         modes.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentMode = btn.getAttribute('data-mode');
         
+        const shutterInner = document.querySelector('.shutter-inner');
+        const shutterBtn = document.getElementById('btn-capture');
+
         if (currentMode === 'VIDEO') {
-            alert("Modo Vídeo seleccionado. (Próximamente grabación continua de vídeo).");
-        } else if (currentMode === 'PORTRAIT') {
-            alert("Modo Retrato activado (Foco central optimizado).");
-        } else if (currentMode === 'PANO') {
-            alert("Modo Panorámica seleccionado.");
+            shutterInner.style.background = "#ff3b30"; // Botón rojo para indicar vídeo
+            shutterBtn.style.borderColor = "#ff3b30";
+        } else {
+            shutterInner.style.background = "#ffffff"; // Blanco normal para foto/retrato/pano
+            shutterBtn.style.borderColor = "#ffffff";
         }
     });
 });
 
-// 5. Botón de Mapa (Abre Google Maps con tu ubicación GPS actual)
+// 5. Botón de Mapa
 openMapBtn.addEventListener('click', () => {
     const mapUrl = `https://www.google.com/maps?q=${currentCoords.lat},${currentCoords.lon}`;
     window.open(mapUrl, '_blank');
 });
 
-// 6. Captura de Foto con Sello Integrado
+// 6. Botón de Disparo inteligente según el Modo seleccionado
 captureBtn.addEventListener('click', () => {
+    if (currentMode === 'VIDEO') {
+        toggleVideoRecording();
+    } else {
+        capturePhoto();
+    }
+});
+
+// Función de Captura de Foto (Soporta FOTO, RETRATO y PANO)
+function capturePhoto() {
     const width = videoElement.videoWidth || 1280;
     const height = videoElement.videoHeight || 720;
 
@@ -170,22 +181,26 @@ captureBtn.addEventListener('click', () => {
     canvasElement.height = height;
     const ctx = canvasElement.getContext('2d');
 
-    // Aplicar filtro HDR al canvas si está activo
     if (hdrState) {
         ctx.filter = "contrast(1.25) saturate(1.3) brightness(1.05)";
     }
 
-    // Dibujar el fotograma del vídeo
-    ctx.drawImage(videoElement, 0, 0, width, height);
-    ctx.filter = "none"; // Resetear filtro
-
-    // Simular destello de flash en pantalla si está encendido
-    if (flashState) {
-        ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-        ctx.fillRect(0, 0, width, height);
+    // Efecto visual extra si está en modo RETRATO (oscurecer ligeramente los bordes)
+    if (currentMode === 'PORTRAIT') {
+        ctx.filter = "contrast(1.1) brightness(1.02)";
     }
 
-    // Dibujar la tarjeta de Marca de Agua con datos reales
+    ctx.drawImage(videoElement, 0, 0, width, height);
+    ctx.filter = "none";
+
+    // Si es modo PANO, agregar un marco estilizado panorámico
+    if (currentMode === 'PANO') {
+        ctx.fillStyle = "rgba(0,0,0,0.8)";
+        ctx.fillRect(0, 0, width, height * 0.15); // Banda negra arriba
+        ctx.fillRect(0, height * 0.85, width, height * 0.15); // Banda negra abajo
+    }
+
+    // Estampar Marca de Agua GPS / Fecha
     const padding = 40;
     const boxWidth = width - (padding * 2);
     const boxHeight = 160;
@@ -195,7 +210,6 @@ captureBtn.addEventListener('click', () => {
     ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
     ctx.roundRect ? ctx.beginPath() || ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 16) || ctx.fill() : ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-    // Textos de fecha y hora
     ctx.fillStyle = "#FFFFFF";
     ctx.font = "bold 32px sans-serif";
     const now = new Date();
@@ -204,36 +218,90 @@ captureBtn.addEventListener('click', () => {
 
     ctx.fillText(`${timeStr}  •  ${dateStr}`, boxX + 30, boxY + 50);
 
-    // Coordenadas y ubicación
     ctx.fillStyle = "#3b82f6";
     ctx.font = "24px sans-serif";
     ctx.fillText(`📍 ${currentAddress} (${currentCoords.lat.toFixed(4)}°, ${currentCoords.lon.toFixed(4)}°)`, boxX + 30, boxY + 100);
 
-    // Clima y firma de la app
     ctx.fillStyle = "#a1a1a6";
     ctx.font = "20px sans-serif";
-    ctx.fillText(`☁️ 18°C • Cámara Pro Móvil`, boxX + 30, boxY + 138);
+    const modeLabel = currentMode === 'PORTRAIT' ? 'Retrato' : currentMode === 'PANO' ? 'Panorámica' : 'Foto Estándar';
+    ctx.fillText(`☁️ 18°C • ${modeLabel}`, boxX + 30, boxY + 138);
 
-    // Guardar en la galería interna
     const dataUrl = canvasElement.toDataURL('image/jpeg', 0.92);
-    const photoObj = {
+    const mediaObj = {
+        type: 'image',
         url: dataUrl,
         date: `${dateStr} - ${timeStr}`,
         location: `${currentAddress} [${currentCoords.lat.toFixed(2)}, ${currentCoords.lon.toFixed(2)}]`
     };
 
-    capturedPhotos.unshift(photoObj);
+    capturedMedia.unshift(mediaObj);
     updateThumbnail();
-});
+}
 
-// Actualizar miniatura flotante
-function updateThumbnail() {
-    if (capturedPhotos.length > 0) {
-        openGalleryBtn.querySelector('.thumbnail-preview').innerHTML = `<img src="${capturedPhotos[0].url}" alt="Miniatura">`;
+// Función de Grabación de Vídeo Real
+function toggleVideoRecording() {
+    if (!isRecording) {
+        // Iniciar grabación
+        recordedChunks = [];
+        try {
+            mediaRecorder = new MediaRecorder(currentStream, { mimeType: 'video/webm' });
+        } catch (e) {
+            try { mediaRecorder = new MediaRecorder(currentStream); } 
+            catch (err) { alert("Tu navegador no soporta grabación de vídeo."); return; }
+        }
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) recordedChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const videoUrl = URL.createObjectURL(blob);
+            
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = now.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
+
+            const mediaObj = {
+                type: 'video',
+                url: videoUrl,
+                date: `${dateStr} - ${timeStr}`,
+                location: `${currentAddress} [${currentCoords.lat.toFixed(2)}, ${currentCoords.lon.toFixed(2)}]`
+            };
+
+            capturedMedia.unshift(mediaObj);
+            updateThumbnail();
+            alert("¡Vídeo grabado y guardado en la galería con éxito!");
+        };
+
+        mediaRecorder.start();
+        isRecording = true;
+        captureBtn.style.transform = "scale(0.85)";
+        document.querySelector('.shutter-inner').style.borderRadius = "4px"; // Cambiar icono a cuadrado de stop
+        alert("🔴 Grabación de vídeo iniciada... Vuelve a pulsar el botón para detener.");
+    } else {
+        // Detener grabación
+        mediaRecorder.stop();
+        isRecording = false;
+        captureBtn.style.transform = "scale(1)";
+        document.querySelector('.shutter-inner').style.borderRadius = "50%";
     }
 }
 
-// Abrir y cerrar Galería
+// Actualizar miniatura
+function updateThumbnail() {
+    if (capturedMedia.length > 0) {
+        const lastItem = capturedMedia[0];
+        if (lastItem.type === 'image') {
+            openGalleryBtn.querySelector('.thumbnail-preview').innerHTML = `<img src="${lastItem.url}" alt="Miniatura">`;
+        } else {
+            openGalleryBtn.querySelector('.thumbnail-preview').innerHTML = `<i class="fa-solid fa-video" style="color:#ff3b30;"></i>`;
+        }
+    }
+}
+
+// Galería y Visualizador
 openGalleryBtn.addEventListener('click', () => {
     renderGalleryModal();
     galleryModal.classList.add('active');
@@ -244,25 +312,53 @@ closeGalleryBtn.addEventListener('click', () => {
 });
 
 function renderGalleryModal() {
-    if (capturedPhotos.length === 0) {
-        galleryGrid.innerHTML = `<p class="empty-msg">No hay fotos capturadas aún.</p>`;
+    if (capturedMedia.length === 0) {
+        galleryGrid.innerHTML = `<p class="empty-msg">No hay fotos ni vídeos capturados aún.</p>`;
         return;
     }
 
     galleryGrid.innerHTML = '';
-    capturedPhotos.forEach((photo, index) => {
+    capturedMedia.forEach((media, index) => {
         const item = document.createElement('div');
         item.className = 'gallery-item';
-        item.innerHTML = `<img src="${photo.url}" alt="Foto ${index}">`;
-        item.addEventListener('click', () => openPreview(photo));
+        if (media.type === 'image') {
+            item.innerHTML = `<img src="${media.url}" alt="Foto ${index}">`;
+        } else {
+            item.innerHTML = `<div style="width:100%; height:100%; background:#222; display:flex; justify-content:center; align-items:center; color:#ff3b30; font-size:24px;"><i class="fa-solid fa-play"></i></div>`;
+        }
+        item.addEventListener('click', () => openPreview(media));
         galleryGrid.appendChild(item);
     });
 }
 
-function openPreview(photo) {
-    previewImg.src = photo.url;
-    previewMetaText.innerHTML = `<i class="fa-solid fa-clock"></i> ${photo.date}<br><i class="fa-solid fa-location-dot"></i> ${photo.location}`;
-    downloadBtn.href = photo.url;
+function openPreview(media) {
+    const previewContainer = document.querySelector('.preview-content');
+    
+    // Reemplazar imagen previa si es vídeo
+    const existingMediaEl = document.getElementById('preview-media-el');
+    if (existingMediaEl) existingMediaEl.remove();
+
+    if (media.type === 'image') {
+        previewImg.style.display = 'block';
+        previewImg.src = media.url;
+        downloadBtn.href = media.url;
+        downloadBtn.download = "camara-pro-foto.jpg";
+    } else {
+        previewImg.style.display = 'none';
+        const videoEl = document.createElement('video');
+        videoEl.id = 'preview-media-el';
+        videoEl.src = media.url;
+        videoEl.controls = true;
+        videoEl.autoplay = true;
+        videoEl.style.maxWidth = '100%';
+        videoEl.style.maxHeight = '60vh';
+        videoEl.style.borderRadius = '12px';
+        previewContainer.insertBefore(videoEl, previewMetaText);
+        downloadBtn.href = media.url;
+        downloadBtn.download = "camara-pro-video.webm";
+    }
+
+    previewMetaText.innerHTML = `<i class="fa-solid fa-clock"></i> ${media.date}<br><i class="fa-solid fa-location-dot"></i> ${media.location}`;
     previewModal.classList.add('active');
 }
 
@@ -270,7 +366,7 @@ closePreviewBtn.addEventListener('click', () => {
     previewModal.classList.remove('active');
 });
 
-// Inicializar cámara al cargar
+// Inicializar cámara
 window.addEventListener('load', () => {
     startCamera();
 });
