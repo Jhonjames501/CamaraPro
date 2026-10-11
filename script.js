@@ -112,7 +112,7 @@ function initGPS() {
     }
 }
 
-// Función robusta de apertura de cámara para contenedores WebView de APK
+// Función 100% segura para iniciar la cámara mediante interacción nativa
 async function startCamera() {
     try {
         if (currentStream) {
@@ -131,22 +131,47 @@ async function startCamera() {
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         videoElement.srcObject = currentStream;
         await videoElement.play();
+        
+        // Ocultar botón de emergencia si la cámara arrancó con éxito
+        const emergencyBtn = document.getElementById('emergency-start-btn');
+        if (emergencyBtn) emergencyBtn.style.display = 'none';
+
     } catch (err) {
-        console.warn("Intentando acceso de emergencia a cámara...", err);
-        try {
-            currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            videoElement.srcObject = currentStream;
-            await videoElement.play();
-        } catch (e) {
-            console.error("Error definitivo de cámara:", e);
-        }
+        console.warn("Permiso de cámara requerido por el contenedor APK.", err);
+        showEmergencyButton();
     }
 }
 
-// Permitir iniciar la cámara tocando la pantalla directamente (vital para APKs de WebView)
-videoElement.addEventListener('click', () => {
-    startCamera();
-});
+// Crear un botón flotante de inicio si el WebView bloquea el script automático
+function showEmergencyButton() {
+    let emergencyBtn = document.getElementById('emergency-start-btn');
+    if (!emergencyBtn) {
+        emergencyBtn = document.createElement('button');
+        emergencyBtn.id = 'emergency-start-btn';
+        emergencyBtn.innerHTML = '<i class="fa-solid fa-camera"></i> TOCA AQUÍ PARA ACTIVAR CÁMARA';
+        emergencyBtn.style.position = 'absolute';
+        emergencyBtn.style.top = '50%';
+        emergencyBtn.style.left = '50%';
+        emergencyBtn.style.transform = 'translate(-50%, -50%)';
+        emergencyBtn.style.zIndex = '999';
+        emergencyBtn.style.background = '#3b82f6';
+        emergencyBtn.style.color = '#white';
+        emergencyBtn.style.border = 'none';
+        emergencyBtn.style.padding = '16px 24px';
+        emergencyBtn.style.borderRadius = '30px';
+        emergencyBtn.style.fontSize = '14px';
+        emergencyBtn.style.fontWeight = 'bold';
+        emergencyBtn.style.boxShadow = '0 4px 20px rgba(0,0,0,0.8)';
+        
+        emergencyBtn.addEventListener('click', () => {
+            startCamera();
+        });
+        
+        document.querySelector('.camera-viewfinder').appendChild(emergencyBtn);
+    } else {
+        emergencyBtn.style.display = 'block';
+    }
+}
 
 // Secuencia Splash Screen de 4 segundos
 function initSplashSequence() {
