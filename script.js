@@ -31,14 +31,13 @@ let flashState = false;
 let hdrState = false;
 let currentMode = 'PHOTO';
 
-// Variables para grabación de vídeo
 let mediaRecorder = null;
 let recordedChunks = [];
 let isRecording = false;
 
 let currentCoords = { lat: -11.9333, lon: -77.0500 }; // Carabayllo, Lima
 let currentAddress = "Carabayllo, Lima";
-let capturedMedia = []; // Almacena fotos y vídeos
+let capturedMedia = [];
 
 // Reloj en tiempo real
 function updateClock() {
@@ -51,7 +50,7 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// Obtener ubicación GPS real del dispositivo
+// Obtener ubicación GPS real
 function initGPS() {
     if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
@@ -71,7 +70,7 @@ function initGPS() {
 }
 initGPS();
 
-// Iniciar Cámara del Dispositivo
+// Iniciar Cámara
 async function startCamera() {
     if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
@@ -83,7 +82,7 @@ async function startCamera() {
             width: { ideal: 1920 },
             height: { ideal: 1080 }
         },
-        audio: true // Necesario para el modo vídeo
+        audio: true
     };
 
     try {
@@ -94,13 +93,13 @@ async function startCamera() {
     }
 }
 
-// 1. Botón de Girar Cámara
+// Girar Cámara
 flipBtn.addEventListener('click', () => {
     useFrontCamera = !useFrontCamera;
     startCamera();
 });
 
-// 2. Botón de Flash real
+// Flash
 flashBtn.addEventListener('click', async () => {
     flashState = !flashState;
     if (flashState) {
@@ -118,12 +117,12 @@ flashBtn.addEventListener('click', async () => {
         if (track && track.getCapabilities && track.getCapabilities().torch) {
             try {
                 await track.applyConstraints({ advanced: [{ torch: flashState }] });
-            } catch (e) { console.log("Torch no soportado"); }
+            } catch (e) {}
         }
     }
 });
 
-// 3. Botón de HDR
+// HDR
 hdrBtn.addEventListener('click', () => {
     hdrState = !hdrState;
     if (hdrState) {
@@ -137,7 +136,7 @@ hdrBtn.addEventListener('click', () => {
     }
 });
 
-// 4. Selección de Modos de Captura con lógica real
+// Modos
 modes.forEach(btn => {
     btn.addEventListener('click', () => {
         modes.forEach(b => b.classList.remove('active'));
@@ -148,22 +147,22 @@ modes.forEach(btn => {
         const shutterBtn = document.getElementById('btn-capture');
 
         if (currentMode === 'VIDEO') {
-            shutterInner.style.background = "#ff3b30"; // Botón rojo para indicar vídeo
+            shutterInner.style.background = "#ff3b30";
             shutterBtn.style.borderColor = "#ff3b30";
         } else {
-            shutterInner.style.background = "#ffffff"; // Blanco normal para foto/retrato/pano
+            shutterInner.style.background = "#ffffff";
             shutterBtn.style.borderColor = "#ffffff";
         }
     });
 });
 
-// 5. Botón de Mapa
+// Mapa
 openMapBtn.addEventListener('click', () => {
     const mapUrl = `https://www.google.com/maps?q=${currentCoords.lat},${currentCoords.lon}`;
     window.open(mapUrl, '_blank');
 });
 
-// 6. Botón de Disparo inteligente según el Modo seleccionado
+// Disparo
 captureBtn.addEventListener('click', () => {
     if (currentMode === 'VIDEO') {
         toggleVideoRecording();
@@ -172,7 +171,7 @@ captureBtn.addEventListener('click', () => {
     }
 });
 
-// Función de Captura de Foto (Soporta FOTO, RETRATO y PANO)
+// Capturar Foto y Descargarla a la Galería del Celular
 function capturePhoto() {
     const width = videoElement.videoWidth || 1280;
     const height = videoElement.videoHeight || 720;
@@ -185,7 +184,6 @@ function capturePhoto() {
         ctx.filter = "contrast(1.25) saturate(1.3) brightness(1.05)";
     }
 
-    // Efecto visual extra si está en modo RETRATO (oscurecer ligeramente los bordes)
     if (currentMode === 'PORTRAIT') {
         ctx.filter = "contrast(1.1) brightness(1.02)";
     }
@@ -193,14 +191,13 @@ function capturePhoto() {
     ctx.drawImage(videoElement, 0, 0, width, height);
     ctx.filter = "none";
 
-    // Si es modo PANO, agregar un marco estilizado panorámico
     if (currentMode === 'PANO') {
         ctx.fillStyle = "rgba(0,0,0,0.8)";
-        ctx.fillRect(0, 0, width, height * 0.15); // Banda negra arriba
-        ctx.fillRect(0, height * 0.85, width, height * 0.15); // Banda negra abajo
+        ctx.fillRect(0, 0, width, height * 0.15);
+        ctx.fillRect(0, height * 0.85, width, height * 0.15);
     }
 
-    // Estampar Marca de Agua GPS / Fecha
+    // Tarjeta de Sello GPS / Fecha
     const padding = 40;
     const boxWidth = width - (padding * 2);
     const boxHeight = 160;
@@ -228,6 +225,16 @@ function capturePhoto() {
     ctx.fillText(`☁️ 18°C • ${modeLabel}`, boxX + 30, boxY + 138);
 
     const dataUrl = canvasElement.toDataURL('image/jpeg', 0.92);
+
+    // NUEVO: Descarga automática a la galería del dispositivo
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    const fileName = `CamaraPro_${now.toISOString().slice(0,10)}_${now.getHours()}${now.getMinutes()}${now.getSeconds()}.jpg`;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
     const mediaObj = {
         type: 'image',
         url: dataUrl,
@@ -239,10 +246,9 @@ function capturePhoto() {
     updateThumbnail();
 }
 
-// Función de Grabación de Vídeo Real
+// Grabación de Vídeo
 function toggleVideoRecording() {
     if (!isRecording) {
-        // Iniciar grabación
         recordedChunks = [];
         try {
             mediaRecorder = new MediaRecorder(currentStream, { mimeType: 'video/webm' });
@@ -263,6 +269,14 @@ function toggleVideoRecording() {
             const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
             const dateStr = now.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
 
+            // Descarga automática del vídeo a la galería/descargas
+            const link = document.createElement('a');
+            link.href = videoUrl;
+            link.download = `CamaraPro_Video_${now.getTime()}.webm`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
             const mediaObj = {
                 type: 'video',
                 url: videoUrl,
@@ -272,16 +286,14 @@ function toggleVideoRecording() {
 
             capturedMedia.unshift(mediaObj);
             updateThumbnail();
-            alert("¡Vídeo grabado y guardado en la galería con éxito!");
+            alert("¡Vídeo guardado y descargado a tu galería!");
         };
 
         mediaRecorder.start();
         isRecording = true;
         captureBtn.style.transform = "scale(0.85)";
-        document.querySelector('.shutter-inner').style.borderRadius = "4px"; // Cambiar icono a cuadrado de stop
-        alert("🔴 Grabación de vídeo iniciada... Vuelve a pulsar el botón para detener.");
+        document.querySelector('.shutter-inner').style.borderRadius = "4px";
     } else {
-        // Detener grabación
         mediaRecorder.stop();
         isRecording = false;
         captureBtn.style.transform = "scale(1)";
@@ -333,8 +345,6 @@ function renderGalleryModal() {
 
 function openPreview(media) {
     const previewContainer = document.querySelector('.preview-content');
-    
-    // Reemplazar imagen previa si es vídeo
     const existingMediaEl = document.getElementById('preview-media-el');
     if (existingMediaEl) existingMediaEl.remove();
 
@@ -366,7 +376,7 @@ closePreviewBtn.addEventListener('click', () => {
     previewModal.classList.remove('active');
 });
 
-// Inicializar cámara
+// Inicializar
 window.addEventListener('load', () => {
     startCamera();
 });
