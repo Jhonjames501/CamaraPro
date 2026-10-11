@@ -113,7 +113,7 @@ function initGPS() {
     }
 }
 
-// Iniciar Cámara adaptada para WebView de Android y APKs
+// Iniciar Cámara con compatibilidad absoluta para WebView APK
 async function startCamera() {
     if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
@@ -131,19 +131,26 @@ async function startCamera() {
     try {
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         videoElement.srcObject = currentStream;
-        videoElement.play();
+        await videoElement.play();
     } catch (err) {
-        console.warn("Intentando método alternativo de cámara para APK:", err);
+        console.warn("Fallo el stream principal, intentando método de emergencia para APK...", err);
         try {
-            // Fallback genérico para WebView estricto
             currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             videoElement.srcObject = currentStream;
-            videoElement.play();
+            await videoElement.play();
         } catch (e) {
-            console.error("No se pudo acceder a la cámara en el contenedor:", e);
+            console.error("Bloqueo de cámara en APK:", e);
+            alert("Por favor, asegúrate de dar permisos de cámara a la app en los ajustes de tu teléfono y toca la pantalla para iniciar.");
         }
     }
 }
+
+// Permitir activar la cámara manualmente tocando el visor si el WebView la bloquea de inicio
+videoElement.addEventListener('click', () => {
+    if (!currentStream || videoElement.paused) {
+        startCamera();
+    }
+});
 
 // Secuencia Splash Screen de 4 segundos
 function initSplashSequence() {
@@ -165,7 +172,6 @@ function initSplashSequence() {
                 splashScreen.style.display = 'none';
                 mainApp.style.opacity = '1';
                 mainApp.style.pointerEvents = 'auto';
-                // Forzar inicio de cámara al mostrar la app principal
                 startCamera();
             }, 800);
         }
