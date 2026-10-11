@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cámara Pro - Sello GPS y Hora</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Barra superior con widgets de Fecha, Hora, GPS y Clima -->
+        <header class="camera-header">
+            <div class="widget-row">
+                <div class="widget-pill time-pill" id="live-time">14:32</div>
+                <div class="widget-pill location-pill" id="live-location">
+                    <i class="fa-solid fa-location-dot"></i> <span id="location-text">Buscando GPS...</span>
+                </div>
+            </div>
+            <div class="widget-row secondary-row">
+                <div class="widget-text" id="live-date">Sáb, 10 Oct, 2026</div>
+                <div class="widget-pill weather-pill">
+                    <i class="fa-solid fa-cloud-sun"></i> <span id="weather-text">18°C • Parcialmente nublado</span>
+                </div>
+            </div>
+            <div class="widget-row coordinates-row">
+                <div class="widget-text" id="live-coords"><i class="fa-solid fa-crosshairs"></i> --.----° S, --.----° O</div>
+            </div>
+        </header>
+
+        <!-- Visor de la Cámara -->
+        <main class="camera-viewfinder">
+            <video id="camera-feed" autoplay playsinline muted></video>
+            <canvas id="photo-canvas" style="display:none;"></canvas>
+
+            <!-- Controles laterales internos -->
+            <div class="side-controls">
+                <button class="icon-btn" id="btn-flash" title="Flash">
+                    <i class="fa-solid fa-bolt-slash" id="flash-icon"></i>
+                    <span>APAGADO</span>
+                </button>
+                <button class="icon-btn" id="btn-hdr" title="HDR">
+                    <span class="badge-txt">HDR</span>
+                </button>
+                <button class="icon-btn" id="btn-flip" title="Cambiar Cámara">
+                    <i class="fa-solid fa-camera-rotate"></i>
+                    <span>GIRAR</span>
+                </button>
+            </div>
+        </main>
+
+        <!-- Navegación de Modos de Captura -->
+        <nav class="modes-nav">
+            <button class="mode-btn active" data-mode="PHOTO">FOTO</button>
+            <button class="mode-btn" data-mode="VIDEO">VÍDEO</button>
+            <button class="mode-btn" data-mode="PORTRAIT">RETRATO</button>
+            <button class="mode-btn" data-mode="PANO">PANO</button>
+        </nav>
+
+        <!-- Controles Inferiores (Galería, Disparo, Mapa/Pro) -->
+        <footer class="camera-footer">
+            <div class="footer-action" id="open-gallery">
+                <div class="thumbnail-preview" id="thumb-container">
+                    <i class="fa-solid fa-image"></i>
+                </div>
+                <span>Galería</span>
+            </div>
+
+            <div class="shutter-container">
+                <button class="shutter-button" id="btn-capture" aria-label="Tomar foto">
+                    <div class="shutter-inner"></div>
+                </button>
+            </div>
+
+            <div class="footer-action" id="open-map">
+                <div class="map-icon-preview">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                </div>
+                <span>Mapa</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal de Galería -->
+    <div class="modal" id="gallery-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-images"></i> Galería Pro</h2>
+                <button class="close-modal" id="close-gallery">&times;</button>
+            </div>
+            <div class="modal-body" id="gallery-grid">
+                <p class="empty-msg">No hay fotos capturadas aún.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Vista Detallada de Foto -->
+    <div class="modal" id="preview-modal">
+        <div class="modal-content preview-content">
+            <button class="close-modal" id="close-preview">&times;</button>
+            <img id="preview-img" src="" alt="Foto capturada">
+            <div class="preview-meta" id="preview-meta-text"></div>
+            <div class="preview-actions">
+                <a id="download-btn" class="pro-btn" download="camara-pro.jpg"><i class="fa-solid fa-download"></i> Descargar Imagen</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
