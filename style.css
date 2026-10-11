@@ -70,68 +70,14 @@ body {
     align-items: center;
 }
 
-.splash-top-bar {
-    font-size: 13px;
-    color: #a1a1a6;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-}
-
-.splash-center {
-    justify-content: center;
-    gap: 16px;
-    text-align: center;
-}
-
-.splash-logo-container {
-    width: 110px;
-    height: 110px;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    filter: drop-shadow(0 0 16px rgba(59, 130, 246, 0.6));
-}
-
-.splash-logo {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    border-radius: 24px;
-}
-
-.logo-glow-fallback {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.splash-title {
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    color: #ffffff;
-    margin-top: 4px;
-}
-
-.loader-dots {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.dot {
-    width: 8px;
-    height: 8px;
-    background-color: #3b82f6;
-    border-radius: 50%;
-    animation: bounce 1.4s infinite ease-in-out both;
-}
-
+.splash-top-bar { font-size: 13px; color: #a1a1a6; font-weight: 500; letter-spacing: 0.5px; }
+.splash-center { justify-content: center; gap: 16px; text-align: center; }
+.splash-logo-container { width: 110px; height: 110px; position: relative; display: flex; justify-content: center; align-items: center; filter: drop-shadow(0 0 16px rgba(59, 130, 246, 0.6)); }
+.splash-logo { width: 100%; height: 100%; object-fit: contain; border-radius: 24px; }
+.logo-glow-fallback { position: absolute; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; }
+.splash-title { font-size: 26px; font-weight: 700; letter-spacing: 3px; color: #ffffff; margin-top: 4px; }
+.loader-dots { display: flex; gap: 8px; margin-top: 10px; }
+.dot { width: 8px; height: 8px; background-color: #3b82f6; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
 .dot:nth-child(1) { animation-delay: -0.32s; }
 .dot:nth-child(2) { animation-delay: -0.16s; }
 
@@ -140,44 +86,12 @@ body {
     40% { transform: scale(1.0); }
 }
 
-.splash-status-main {
-    font-size: 14px;
-    color: #ffffff;
-    font-weight: 500;
-    margin-top: 4px;
-}
-
-.splash-status-sub {
-    font-size: 12px;
-    color: #3b82f6;
-    font-weight: 600;
-}
-
-.splash-bottom {
-    gap: 14px;
-}
-
-.progress-bar-container {
-    width: 100%;
-    height: 3px;
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.progress-bar-fill {
-    width: 0%;
-    height: 100%;
-    background-color: #3b82f6;
-    box-shadow: 0 0 10px #3b82f6;
-    transition: width 0.1s linear;
-}
-
-.splash-footer {
-    font-size: 11px;
-    color: #8e8e93;
-    letter-spacing: 0.5px;
-}
+.splash-status-main { font-size: 14px; color: #ffffff; font-weight: 500; margin-top: 4px; }
+.splash-status-sub { font-size: 12px; color: #3b82f6; font-weight: 600; }
+.splash-bottom { gap: 14px; }
+.progress-bar-container { width: 100%; height: 3px; background-color: rgba(255, 255, 255, 0.1); border-radius: 2px; overflow: hidden; }
+.progress-bar-fill { width: 0%; height: 100%; background-color: #3b82f6; box-shadow: 0 0 10px #3b82f6; transition: width 0.1s linear; }
+.splash-footer { font-size: 11px; color: #8e8e93; letter-spacing: 0.5px; }
 
 /* APP PRINCIPAL */
 .camera-header {
@@ -225,7 +139,43 @@ body {
     align-items: center;
 }
 
-#camera-feed { width: 100%; height: 100%; object-fit: cover; }
+.native-viewfinder-screen {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #1c1c1e 0%, #0c0c0e 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.camera-placeholder-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: #8e8e93;
+    text-align: center;
+    padding: 20px;
+}
+
+.camera-placeholder-box i {
+    font-size: 48px;
+    color: #3b82f6;
+    animation: pulse 2s infinite;
+}
+
+.camera-placeholder-box span {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.8; }
+}
 
 .side-controls {
     position: absolute;
