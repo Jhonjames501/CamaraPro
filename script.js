@@ -23,6 +23,13 @@ const liveDate = document.getElementById('live-date');
 const locationText = document.getElementById('location-text');
 const liveCoords = document.getElementById('live-coords');
 
+// Referencias Splash Screen
+const splashScreen = document.getElementById('splash-screen');
+const mainApp = document.getElementById('main-app');
+const progressFill = document.getElementById('progress-fill');
+const splashTime = document.getElementById('splash-time');
+const splashDate = document.getElementById('splash-date');
+
 const modes = document.querySelectorAll('.mode-btn');
 const openGalleryBtn = document.getElementById('open-gallery');
 const galleryModal = document.getElementById('gallery-modal');
@@ -61,10 +68,14 @@ let proSettings = {
 // Reloj en tiempo real
 function updateClock() {
     const now = new Date();
-    liveTime.textContent = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    const timeString = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    const dateString = now.toLocaleDateString('es-ES', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+
+    liveTime.textContent = timeString;
+    liveDate.textContent = dateString;
     
-    const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-    liveDate.textContent = now.toLocaleDateString('es-ES', options);
+    if (splashTime) splashTime.textContent = timeString;
+    if (splashDate) splashDate.textContent = dateString;
 }
 setInterval(updateClock, 1000);
 updateClock();
@@ -101,7 +112,6 @@ function initGPS() {
         );
     }
 }
-initGPS();
 
 // Iniciar Cámara
 async function startCamera() {
@@ -125,6 +135,32 @@ async function startCamera() {
             console.warn("Aviso de cámara:", e);
         }
     }
+}
+
+// Secuencia Splash Screen de 4 segundos
+function initSplashSequence() {
+    initGPS();
+    startCamera();
+
+    let progress = 0;
+    const intervalTime = 40;
+    const increment = 100 / (4000 / intervalTime);
+
+    const progressInterval = setInterval(() => {
+        progress += increment;
+        if (progress >= 100) {
+            progress = 100;
+            clearInterval(progressInterval);
+
+            splashScreen.style.opacity = '0';
+            setTimeout(() => {
+                splashScreen.style.display = 'none';
+                mainApp.style.opacity = '1';
+                mainApp.style.pointerEvents = 'auto';
+            }, 800);
+        }
+        progressFill.style.width = `${progress}%`;
+    }, intervalTime);
 }
 
 // Girar Cámara
@@ -228,7 +264,7 @@ captureBtn.addEventListener('click', () => {
     }
 });
 
-// Capturar Foto
+// Capturar Foto y Descargar a Galería del Dispositivo
 function capturePhoto() {
     const width = videoElement.videoWidth || 1280;
     const height = videoElement.videoHeight || 720;
@@ -400,4 +436,7 @@ function openPreview(media) {
 
 closePreviewBtn.addEventListener('click', () => previewModal.classList.remove('active'));
 
-window.addEventListener('load', () => startCamera());
+// Arrancar secuencia al cargar
+window.addEventListener('load', () => {
+    initSplashSequence();
+});
