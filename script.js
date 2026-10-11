@@ -1,5 +1,7 @@
+
 // Referencias del DOM
-const videoElement = document.getElementById('camera-feed');
+const nativeCameraInput = document.getElementById('native-camera-input');
+const triggerNativeCam = document.getElementById('trigger-native-cam');
 const canvasElement = document.getElementById('photo-canvas');
 const captureBtn = document.getElementById('btn-capture');
 const flipBtn = document.getElementById('btn-flip');
@@ -42,15 +44,10 @@ const previewImg = document.getElementById('preview-img');
 const previewMetaText = document.getElementById('preview-meta-text');
 const downloadBtn = document.getElementById('download-btn');
 
-let currentStream = null;
 let useFrontCamera = false;
 let flashState = false;
 let hdrState = false;
 let currentMode = 'PHOTO';
-
-let mediaRecorder = null;
-let recordedChunks = [];
-let isRecording = false;
 
 let currentCoords = { lat: -12.0464, lon: -77.0428 };
 let currentAddress = "Lima, Perú";
@@ -112,66 +109,100 @@ function initGPS() {
     }
 }
 
-// Función 100% segura para iniciar la cámara mediante interacción nativa
-async function startCamera() {
-    try {
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
+// Abrir cámara nativa del celular al presionar el visor o el botón de disparo
+function openNativeCamera() {
+    nativeCameraInput.click();
+}
+
+triggerNativeCam.addEventListener('click', openNativeCamera);
+captureBtn.addEventListener('click', openNativeCamera);
+
+// Procesar la foto tomada por la cámara nativa y aplicarle el sello profesional
+nativeCameraInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const width = img.width;
+            const height = img.height;
+
+            canvasElement.width = width;
+            canvasElement.height = height;
+            const ctx = canvasElement.getContext('2d');
+
+            if (hdrState) ctx.filter = "contrast(1.25) saturate(1.3) brightness(1.05)";
+            if (currentMode === 'PORTRAIT') ctx.filter = "contrast(1.1) brightness(1.02)";
+
+            ctx.drawImage(img, 0, 0, width, height);
+            ctx.filter = "none";
+
+            if (currentMode === 'PANO') {
+                ctx.fillStyle = "rgba(0,0,0,0.8)";
+                ctx.fillRect(0, 0, width, height * 0.15);
+                ctx.fillRect(0, height * 0.85, width, height * 0.15);
+            }
+
+            // Tarjeta de Sello GPS y Datos
+            const padding = 40;
+            const boxWidth = width - (padding * 2);
+            const boxHeight = 180;
+            const boxX = padding;
+            const boxY = height - boxHeight - padding;
+
+            ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+            ctx.roundRect ? ctx.beginPath() || ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 16) || ctx.fill() : ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 30px sans-serif";
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const dateStr = now.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
+
+            ctx.fillText(`${timeStr}  •  ${dateStr}`, boxX + 30, boxY + 45);
+
+            ctx.fillStyle = "#ff9f0a";
+            ctx.font = "bold 22px sans-serif";
+            ctx.fillText(`📌 ${proSettings.customText}`, boxX + 30, boxY + 88);
+
+            ctx.fillStyle = "#3b82f6";
+            ctx.font = "22px sans-serif";
+            ctx.fillText(`📍 ${currentAddress} (${formatCoordinates(currentCoords.lat, currentCoords.lon)})`, boxX + 30, boxY + 128);
+
+            ctx.fillStyle = "#a1a1a6";
+            ctx.font = "18px sans-serif";
+            ctx.fillText(`☁️ 18°C • Modo: ${currentMode}`, boxX + 30, boxY + 162);
+
+            if (customLogoImage) {
+                const logoSize = 90;
+                ctx.drawImage(customLogoImage, width - logoSize - 40, 40, logoSize, logoSize);
+            }
+
+            const dataUrl = canvasElement.toDataURL('image/jpeg', proSettings.quality);
+
+            // Descarga automática de la imagen sellada
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `CamaraPro_${now.toISOString().slice(0,10)}_${now.getHours()}${now.getMinutes()}${now.getSeconds()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            capturedMedia.unshift({
+                type: 'image',
+                url: dataUrl,
+                date: `${dateStr} - ${timeStr}`,
+                location: `${currentAddress} [${formatCoordinates(currentCoords.lat, currentCoords.lon)}]`
+            });
+            updateThumbnail();
+            nativeCameraInput.value = ""; // Limpiar input
         }
-
-        const constraints = {
-            video: {
-                facingMode: useFrontCamera ? 'user' : 'environment',
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-            },
-            audio: true
-        };
-
-        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-        videoElement.srcObject = currentStream;
-        await videoElement.play();
-        
-        // Ocultar botón de emergencia si la cámara arrancó con éxito
-        const emergencyBtn = document.getElementById('emergency-start-btn');
-        if (emergencyBtn) emergencyBtn.style.display = 'none';
-
-    } catch (err) {
-        console.warn("Permiso de cámara requerido por el contenedor APK.", err);
-        showEmergencyButton();
+        img.src = e.target.result;
     }
-}
-
-// Crear un botón flotante de inicio si el WebView bloquea el script automático
-function showEmergencyButton() {
-    let emergencyBtn = document.getElementById('emergency-start-btn');
-    if (!emergencyBtn) {
-        emergencyBtn = document.createElement('button');
-        emergencyBtn.id = 'emergency-start-btn';
-        emergencyBtn.innerHTML = '<i class="fa-solid fa-camera"></i> TOCA AQUÍ PARA ACTIVAR CÁMARA';
-        emergencyBtn.style.position = 'absolute';
-        emergencyBtn.style.top = '50%';
-        emergencyBtn.style.left = '50%';
-        emergencyBtn.style.transform = 'translate(-50%, -50%)';
-        emergencyBtn.style.zIndex = '999';
-        emergencyBtn.style.background = '#3b82f6';
-        emergencyBtn.style.color = '#white';
-        emergencyBtn.style.border = 'none';
-        emergencyBtn.style.padding = '16px 24px';
-        emergencyBtn.style.borderRadius = '30px';
-        emergencyBtn.style.fontSize = '14px';
-        emergencyBtn.style.fontWeight = 'bold';
-        emergencyBtn.style.boxShadow = '0 4px 20px rgba(0,0,0,0.8)';
-        
-        emergencyBtn.addEventListener('click', () => {
-            startCamera();
-        });
-        
-        document.querySelector('.camera-viewfinder').appendChild(emergencyBtn);
-    } else {
-        emergencyBtn.style.display = 'block';
-    }
-}
+    reader.readAsDataURL(file);
+});
 
 // Secuencia Splash Screen de 4 segundos
 function initSplashSequence() {
@@ -192,22 +223,26 @@ function initSplashSequence() {
                 splashScreen.style.display = 'none';
                 mainApp.style.opacity = '1';
                 mainApp.style.pointerEvents = 'auto';
-                startCamera();
             }, 800);
         }
         progressFill.style.width = `${progress}%`;
     }, intervalTime);
 }
 
-// Girar Cámara
+// Girar Cámara (Cambia la preferencia de lente nativa)
 flipBtn.addEventListener('click', () => {
     useFrontCamera = !useFrontCamera;
     proSettings.lens = useFrontCamera ? 'user' : 'environment';
-    startCamera();
+    if (useFrontCamera) {
+        nativeCameraInput.setAttribute('capture', 'user');
+    } else {
+        nativeCameraInput.setAttribute('capture', 'environment');
+    }
+    alert(useFrontCamera ? "Modo Cámara Frontal Activo" : "Modo Cámara Trasera Activo");
 });
 
 // Flash
-flashBtn.addEventListener('click', async () => {
+flashBtn.addEventListener('click', () => {
     flashState = !flashState;
     if (flashState) {
         flashIcon.className = "fa-solid fa-bolt";
@@ -218,13 +253,6 @@ flashBtn.addEventListener('click', async () => {
         flashBtn.querySelector('span').textContent = "APAGADO";
         flashBtn.style.color = "#ffffff";
     }
-    
-    if (currentStream) {
-        const track = currentStream.getVideoTracks()[0];
-        if (track && track.getCapabilities && track.getCapabilities().torch) {
-            try { await track.applyConstraints({ advanced: [{ torch: flashState }] }); } catch (e) {}
-        }
-    }
 });
 
 // HDR
@@ -233,11 +261,9 @@ hdrBtn.addEventListener('click', () => {
     if (hdrState) {
         hdrBtn.style.color = "#ff9f0a";
         hdrBtn.style.borderColor = "#ff9f0a";
-        videoElement.style.filter = "contrast(1.25) saturate(1.3) brightness(1.05)";
     } else {
         hdrBtn.style.color = "#ffffff";
         hdrBtn.style.borderColor = "rgba(255, 255, 255, 0.15)";
-        videoElement.style.filter = "none";
     }
 });
 
@@ -252,6 +278,12 @@ saveSettingsBtn.addEventListener('click', () => {
     proSettings.quality = parseFloat(selectQuality.value);
     useFrontCamera = (selectLens.value === 'user');
 
+    if (useFrontCamera) {
+        nativeCameraInput.setAttribute('capture', 'user');
+    } else {
+        nativeCameraInput.setAttribute('capture', 'environment');
+    }
+
     if (inputLogo.files && inputLogo.files[0]) {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -262,8 +294,8 @@ saveSettingsBtn.addEventListener('click', () => {
     }
 
     settingsModal.classList.remove('active');
-    startCamera();
     liveCoords.innerHTML = `<i class="fa-solid fa-crosshairs"></i> ${formatCoordinates(currentCoords.lat, currentCoords.lon)}`;
+    alert("¡Ajustes Pro guardados correctamente!");
 });
 
 // Modos
@@ -291,149 +323,20 @@ openMapBtn.addEventListener('click', () => {
     window.open(`https://www.google.com/maps?q=${currentCoords.lat},${currentCoords.lon}`, '_blank');
 });
 
-// Disparador principal
-captureBtn.addEventListener('click', () => {
-    if (currentMode === 'VIDEO') {
-        toggleVideoRecording();
-    } else {
-        capturePhoto();
-    }
-});
-
-// Capturar Foto
-function capturePhoto() {
-    const width = videoElement.videoWidth || 1280;
-    const height = videoElement.videoHeight || 720;
-
-    canvasElement.width = width;
-    canvasElement.height = height;
-    const ctx = canvasElement.getContext('2d');
-
-    if (hdrState) ctx.filter = "contrast(1.25) saturate(1.3) brightness(1.05)";
-    if (currentMode === 'PORTRAIT') ctx.filter = "contrast(1.1) brightness(1.02)";
-
-    ctx.drawImage(videoElement, 0, 0, width, height);
-    ctx.filter = "none";
-
-    if (currentMode === 'PANO') {
-        ctx.fillStyle = "rgba(0,0,0,0.8)";
-        ctx.fillRect(0, 0, width, height * 0.15);
-        ctx.fillRect(0, height * 0.85, width, height * 0.15);
-    }
-
-    const padding = 40;
-    const boxWidth = width - (padding * 2);
-    const boxHeight = 180;
-    const boxX = padding;
-    const boxY = height - boxHeight - padding;
-
-    ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-    ctx.roundRect ? ctx.beginPath() || ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 16) || ctx.fill() : ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-
-    ctx.fillStyle = "#FFFFFF";
-    ctx.font = "bold 30px sans-serif";
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const dateStr = now.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
-
-    ctx.fillText(`${timeStr}  •  ${dateStr}`, boxX + 30, boxY + 45);
-
-    ctx.fillStyle = "#ff9f0a";
-    ctx.font = "bold 22px sans-serif";
-    ctx.fillText(`📌 ${proSettings.customText}`, boxX + 30, boxY + 88);
-
-    ctx.fillStyle = "#3b82f6";
-    ctx.font = "22px sans-serif";
-    ctx.fillText(`📍 ${currentAddress} (${formatCoordinates(currentCoords.lat, currentCoords.lon)})`, boxX + 30, boxY + 128);
-
-    ctx.fillStyle = "#a1a1a6";
-    ctx.font = "18px sans-serif";
-    ctx.fillText(`☁️ 18°C • Modo: ${currentMode}`, boxX + 30, boxY + 162);
-
-    if (customLogoImage) {
-        const logoSize = 90;
-        ctx.drawImage(customLogoImage, width - logoSize - 40, 40, logoSize, logoSize);
-    }
-
-    const dataUrl = canvasElement.toDataURL('image/jpeg', proSettings.quality);
-
-    const link = document.createElement('a');
-    link.href = dataUrl;
-    link.download = `CamaraPro_${now.toISOString().slice(0,10)}_${now.getHours()}${now.getMinutes()}${now.getSeconds()}.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    capturedMedia.unshift({
-        type: 'image',
-        url: dataUrl,
-        date: `${dateStr} - ${timeStr}`,
-        location: `${currentAddress} [${formatCoordinates(currentCoords.lat, currentCoords.lon)}]`
-    });
-    updateThumbnail();
-}
-
-// Grabación de Vídeo
-function toggleVideoRecording() {
-    if (!isRecording) {
-        recordedChunks = [];
-        try {
-            mediaRecorder = new MediaRecorder(currentStream, { mimeType: 'video/webm' });
-        } catch (e) {
-            try { mediaRecorder = new MediaRecorder(currentStream); } 
-            catch (err) { alert("Tu navegador no soporta grabación de vídeo."); return; }
-        }
-
-        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-        mediaRecorder.onstop = () => {
-            const blob = new Blob(recordedChunks, { type: 'video/webm' });
-            const videoUrl = URL.createObjectURL(blob);
-            const now = new Date();
-
-            const link = document.createElement('a');
-            link.href = videoUrl;
-            link.download = `CamaraPro_Video_${now.getTime()}.webm`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            capturedMedia.unshift({
-                type: 'video',
-                url: videoUrl,
-                date: now.toLocaleString('es-ES'),
-                location: `${currentAddress}`
-            });
-            updateThumbnail();
-        };
-
-        mediaRecorder.start();
-        isRecording = true;
-        captureBtn.style.transform = "scale(0.85)";
-        document.querySelector('.shutter-inner').style.borderRadius = "4px";
-    } else {
-        mediaRecorder.stop();
-        isRecording = false;
-        captureBtn.style.transform = "scale(1)";
-        document.querySelector('.shutter-inner').style.borderRadius = "50%";
-    }
-}
-
 // Miniatura y Galería
 function updateThumbnail() {
     if (capturedMedia.length > 0) {
         const last = capturedMedia[0];
-        openGalleryBtn.querySelector('.thumbnail-preview').innerHTML = last.type === 'image' 
-            ? `<img src="${last.url}" alt="Miniatura">` 
-            : `<i class="fa-solid fa-video" style="color:#ff3b30;"></i>`;
+        openGalleryBtn.querySelector('.thumbnail-preview').innerHTML = `<img src="${last.url}" alt="Miniatura">`;
     }
 }
 
 openGalleryBtn.addEventListener('click', () => {
-    galleryGrid.innerHTML = capturedMedia.length === 0 ? `<p class="empty-msg">No hay fotos ni vídeos capturados aún.</p>` : '';
+    galleryGrid.innerHTML = capturedMedia.length === 0 ? `<p class="empty-msg">No hay fotos capturadas aún.</p>` : '';
     capturedMedia.forEach((media, index) => {
         const item = document.createElement('div');
         item.className = 'gallery-item';
-        item.innerHTML = media.type === 'image' ? `<img src="${media.url}" alt="Foto ${index}">` : `<div style="width:100%;height:100%;background:#222;display:flex;justify-content:center;align-items:center;color:#ff3b30;font-size:24px;"><i class="fa-solid fa-play"></i></div>`;
+        item.innerHTML = `<img src="${media.url}" alt="Foto ${index}">`;
         item.addEventListener('click', () => openPreview(media));
         galleryGrid.appendChild(item);
     });
@@ -443,28 +346,10 @@ openGalleryBtn.addEventListener('click', () => {
 closeGalleryBtn.addEventListener('click', () => galleryModal.classList.remove('active'));
 
 function openPreview(media) {
-    const existing = document.getElementById('preview-media-el');
-    if (existing) existing.remove();
-
-    if (media.type === 'image') {
-        previewImg.style.display = 'block';
-        previewImg.src = media.url;
-        downloadBtn.href = media.url;
-        downloadBtn.download = "camara-pro-foto.jpg";
-    } else {
-        previewImg.style.display = 'none';
-        const v = document.createElement('video');
-        v.id = 'preview-media-el';
-        v.src = media.url;
-        v.controls = true;
-        v.autoplay = true;
-        v.style.maxWidth = '100%';
-        v.style.maxHeight = '60vh';
-        v.style.borderRadius = '12px';
-        document.querySelector('.preview-content').insertBefore(v, previewMetaText);
-        downloadBtn.href = media.url;
-        downloadBtn.download = "camara-pro-video.webm";
-    }
+    previewImg.style.display = 'block';
+    previewImg.src = media.url;
+    downloadBtn.href = media.url;
+    downloadBtn.download = "camara-pro-foto.jpg";
 
     previewMetaText.innerHTML = `<i class="fa-solid fa-clock"></i> ${media.date}<br><i class="fa-solid fa-location-dot"></i> ${media.location}`;
     previewModal.classList.add('active');
