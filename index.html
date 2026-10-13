@@ -1,194 +1,93 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cámara Pro - Sello GPS y Hora</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>CAMARA PRO</title>
+<style>
+/* Tu style.css va aquí - lo mantengo en negro como me pediste */
+body{margin:0;background:#000;color:#fff;font-family:sans-serif;overflow:hidden}
+#camera{width:100vw;height:100vh;object-fit:cover}
+#controls{position:fixed;bottom:20px;width:100%;display:flex;justify-content:center;gap:20px}
+button{width:70px;height:70px;border-radius:50%;border:3px solid #00A8FF;background:#111;color:#fff;font-size:30px}
+</style>
 </head>
 <body>
+<video id="camera" autoplay playsinline></video>
+<canvas id="canvas" style="display:none"></canvas>
 
-    <!-- PANTALLA DE INICIO (SPLASH SCREEN) -->
-    <div id="splash-screen" class="splash-container">
-        <div class="splash-bg"></div>
-        
-        <div class="splash-top-bar">
-            <span id="splash-time">23:11</span> | <span id="splash-loc">Lima, Perú</span> | <span id="splash-date">sáb, 10 oct 2026</span>
-        </div>
+<div id="controls">
+  <button id="btnShot">📸</button>
+  <button id="btnSwitch">🔄</button>
+</div>
 
-        <div class="splash-center">
-            <div class="splash-logo-container">
-                <img src="https://i.imgur.com/83pZ2eH.png" alt="Cámara Pro Logo" class="splash-logo" onerror="this.style.display='none'">
-                <div class="logo-glow-fallback">
-                    <i class="fa-solid fa-location-dot pin-top"></i>
-                    <div class="diaphragm-circle">
-                        <i class="fa-solid fa-clock clock-hands"></i>
-                    </div>
-                </div>
-            </div>
-            <h1 class="splash-title">CAMARA PRO</h1>
-            
-            <div class="loader-dots">
-                <div class="dot"></div>
-                <div class="dot"></div>
-                <div class="dot"></div>
-            </div>
-            <p class="splash-status-main">Cargando camara...</p>
-            <p class="splash-status-sub">Iniciando GPS...</p>
-        </div>
+<!-- ESTO ES LA CLAVE PARA QUE FUNCIONE EN APK -->
+<input type="file" id="fileInput" accept="image/*" capture="environment" style="display:none">
 
-        <div class="splash-bottom">
-            <div class="progress-bar-container">
-                <div class="progress-bar-fill" id="progress-fill"></div>
-            </div>
-            <div class="splash-footer">
-                Preparando cámara • GPS activo • Versión 2.4.1
-            </div>
-        </div>
-    </div>
+<script>
+const video = document.getElementById('camera');
+const canvas = document.getElementById('canvas');
+const fileInput = document.getElementById('fileInput');
+let useNative = false;
+let currentFacing = "environment";
 
-    <!-- APLICACIÓN PRINCIPAL DE CÁMARA -->
-    <div class="app-container" id="main-app" style="opacity: 0; pointer-events: none; transition: opacity 0.8s ease;">
-        <header class="camera-header">
-            <div class="widget-row">
-                <div class="widget-pill time-pill" id="live-time">14:32</div>
-                <div class="widget-pill location-pill" id="live-location">
-                    <i class="fa-solid fa-location-dot"></i> <span id="location-text">Buscando GPS...</span>
-                </div>
-            </div>
-            <div class="widget-row secondary-row">
-                <div class="widget-text" id="live-date">Sáb, 10 Oct, 2026</div>
-                <div class="widget-pill weather-pill">
-                    <i class="fa-solid fa-cloud-sun"></i> <span id="weather-text">18°C • Parcialmente nublado</span>
-                </div>
-            </div>
-            <div class="widget-row coordinates-row">
-                <div class="widget-text" id="live-coords"><i class="fa-solid fa-crosshairs"></i> --.----° S, --.----° O</div>
-            </div>
-        </header>
+// Intenta abrir cámara web
+async function initCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: currentFacing, width: {ideal: 1920}, height: {ideal: 1080} }
+    });
+    video.srcObject = stream;
+    useNative = false;
+  } catch (e) {
+    // Si falla (caso AppGeyser), usa input nativo
+    console.log("WebView detectado, usando camara nativa");
+    useNative = true;
+    fileInput.click();
+  }
+}
 
-        <main class="camera-viewfinder">
-            <!-- Visor de cámara en tiempo real -->
-            <video id="camera-feed" autoplay playsinline muted></video>
-            <canvas id="photo-canvas" style="display:none;"></canvas>
+document.getElementById('btnShot').onclick = () => {
+  if (useNative) {
+    fileInput.click();
+  } else {
+    // Foto normal web
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const data = canvas.toDataURL('image/jpeg');
+    // Guarda o muestra
+    const a = document.createElement('a');
+    a.href = data;
+    a.download = `CAMARA_PRO_${Date.now()}.jpg`;
+    a.click();
+  }
+};
 
-            <div class="side-controls">
-                <button class="icon-btn" id="btn-settings" title="Ajustes Pro">
-                    <i class="fa-solid fa-sliders"></i>
-                    <span>PRO</span>
-                </button>
-                <button class="icon-btn" id="btn-flash" title="Flash">
-                    <i class="fa-solid fa-bolt-slash" id="flash-icon"></i>
-                    <span>APAGADO</span>
-                </button>
-                <button class="icon-btn" id="btn-hdr" title="HDR">
-                    <span class="badge-txt">HDR</span>
-                </button>
-                <button class="icon-btn" id="btn-flip" title="Cambiar Cámara">
-                    <i class="fa-solid fa-camera-rotate"></i>
-                    <span>GIRAR</span>
-                </button>
-            </div>
-        </main>
+fileInput.onchange = (e) => {
+  const file = e.target.files[0];
+  if(file){
+    const url = URL.createObjectURL(file);
+    // Muestra la foto tomada
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      // Aquí puedes guardarla
+      alert("Foto tomada: " + file.name);
+    };
+    img.src = url;
+  }
+};
 
-        <nav class="modes-nav">
-            <button class="mode-btn active" data-mode="PHOTO">FOTO</button>
-            <button class="mode-btn" data-mode="VIDEO">VÍDEO</button>
-            <button class="mode-btn" data-mode="PORTRAIT">RETRATO</button>
-            <button class="mode-btn" data-mode="PANO">PANO</button>
-        </nav>
+document.getElementById('btnSwitch').onclick = () => {
+  currentFacing = currentFacing === "environment"? "user" : "environment";
+  if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
+  initCamera();
+};
 
-        <footer class="camera-footer">
-            <div class="footer-action" id="open-gallery">
-                <div class="thumbnail-preview" id="thumb-container">
-                    <i class="fa-solid fa-image"></i>
-                </div>
-                <span>Galería</span>
-            </div>
-
-            <div class="shutter-container">
-                <button class="shutter-button" id="btn-capture" aria-label="Tomar foto">
-                    <div class="shutter-inner"></div>
-                </button>
-            </div>
-
-            <div class="footer-action" id="open-map">
-                <div class="map-icon-preview">
-                    <i class="fa-solid fa-map-location-dot"></i>
-                </div>
-                <span>Mapa</span>
-            </div>
-        </footer>
-    </div>
-
-    <!-- Modales Pro -->
-    <div class="modal" id="settings-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fa-solid fa-gears"></i> Ajustes de Negocio y Sello</h2>
-                <button class="close-modal" id="close-settings">&times;</button>
-            </div>
-            <div class="settings-body">
-                <div class="setting-group">
-                    <label>📝 Texto de Nota / Proyecto:</label>
-                    <input type="text" id="input-custom-text" value="Cámara Pro - Negocios">
-                </div>
-                <div class="setting-group">
-                    <label>📐 Formato de Coordenadas:</label>
-                    <select id="select-coord-format">
-                        <option value="decimal">Decimal (-12.0464°, -77.0428°)</option>
-                        <option value="dms">Grados/Minutos/Segundos</option>
-                    </select>
-                </div>
-                <div class="setting-group">
-                    <label>🔍 Lente de Cámara:</label>
-                    <select id="select-lens">
-                        <option value="environment">Principal Trasera</option>
-                        <option value="wide">Ultra Gran Angular / Zoom</option>
-                        <option value="user">Frontal (Selfie)</option>
-                    </select>
-                </div>
-                <div class="setting-group">
-                    <label>⚡ Calidad de Captura:</label>
-                    <select id="select-quality">
-                        <option value="0.95">Alta (Máxima Nitidez)</option>
-                        <option value="0.80" selected>Media (Equilibrada)</option>
-                        <option value="0.60">Baja (Reporte Rápido / Liviano)</option>
-                    </select>
-                </div>
-                <div class="setting-group">
-                    <label>🖼️ Logotipo o Sello Personal (Opcional):</label>
-                    <input type="file" id="input-logo" accept="image/*">
-                </div>
-                <button class="pro-btn save-settings-btn" id="save-settings"><i class="fa-solid fa-check"></i> Aplicar Ajustes</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="gallery-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fa-solid fa-images"></i> Galería Pro</h2>
-                <button class="close-modal" id="close-gallery">&times;</button>
-            </div>
-            <div class="modal-body" id="gallery-grid">
-                <p class="empty-msg">No hay fotos capturadas aún.</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="preview-modal">
-        <div class="modal-content preview-content">
-            <button class="close-modal" id="close-preview">&times;</button>
-            <img id="preview-img" src="" alt="Foto capturada">
-            <div class="preview-meta" id="preview-meta-text"></div>
-            <div class="preview-actions">
-                <a id="download-btn" class="pro-btn" download="camara-pro.jpg"><i class="fa-solid fa-download"></i> Descargar Archivo</a>
-            </div>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+initCamera();
+</script>
 </body>
 </html>
